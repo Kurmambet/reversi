@@ -1,5 +1,5 @@
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QCloseEvent, QFont, QKeyEvent
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QAction, QCloseEvent, QDesktopServices, QFont, QKeyEvent
 from PyQt6.QtWidgets import (
     QLabel,
     QMainWindow,
@@ -17,31 +17,57 @@ from src.ui_board import BoardWidget
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        # Инициализация данных
         self.game = Game()
+
+        # Настройка главного окна
         self.setWindowTitle("Реверси (Отелло)")
 
+        # Сборка интерфейса по частям
+        self._setup_menu()
+        self._setup_ui()
+        self._setup_statusbar()
+
+        # Окно принимает минимально возможный размер под все виджеты
+        self.adjustSize()
+        self.setFixedSize(self.size())  #  Жестко фиксируем этот размер
+        self._update_ui()
+
+    def _setup_menu(self):
+        """Создает верхнее системное меню."""
         menu_bar = self.menuBar()
 
-        # Меню "Игра"
-        game_menu = menu_bar.addMenu("Игра")  # type: ignore
+        # --- Меню "Игра" ---
+        game_menu = menu_bar.addMenu("Игра")
 
-        # Действие "Новая игра" в меню
-        new_game_action = game_menu.addAction("Новая игра")
+        new_game_action = QAction("Новая игра", self)
         new_game_action.triggered.connect(self._new_game)
         game_menu.addAction(new_game_action)
 
-        # Действие "Выход" в меню
-        exit_action = game_menu.addAction("Выход")
+        exit_action = QAction("Выход", self)
         exit_action.triggered.connect(self.close)
+        game_menu.addAction(exit_action)
 
-        # Меню "Справка"
+        # --- Меню "Справка" ---
         help_menu = menu_bar.addMenu("Справка")
 
-        # Действие "Правила игры" в меню
-        rules_action = help_menu.addAction("Правила игры (F2)")
+        rules_action = QAction("Правила игры (F2)", self)
         rules_action.triggered.connect(self._show_help)
+        help_menu.addAction(rules_action)
 
-        # --- 2. ОСНОВНОЙ ИНТЕРФЕЙС ---
+        help_menu.addSeparator()
+
+        github_action = QAction("Исходный код (GitHub)", self)
+        github_action.triggered.connect(
+            lambda: QDesktopServices.openUrl(
+                QUrl("https://github.com/Kurmambet/reversi.git")
+            )
+        )
+        help_menu.addAction(github_action)
+
+    def _setup_ui(self):
+        """Создает центральную часть окна (доска, текст, кнопки)."""
         self.status_label = QLabel()
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
@@ -53,7 +79,6 @@ class MainWindow(QMainWindow):
         self.board_widget = BoardWidget(self.game)
         self.board_widget.cell_clicked.connect(self._on_cell_clicked)
 
-        # Оставляем только кнопку "Новая игра" под доской
         btn_new = QPushButton("Новая игра")
         btn_new.setFont(QFont("Arial", 11))
         btn_new.clicked.connect(self._new_game)
@@ -70,18 +95,13 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
-        # --- 3. ИСПРАВЛЯЕМ ОШИБКУ СО СТАТУС-БАРОМ ---
-        # Явно создаем объект статус-бара и устанавливаем его в окно
+    def _setup_statusbar(self):
+        """Настраивает строку состояния внизу окна."""
         status_bar = QStatusBar()
         self.setStatusBar(status_bar)
-        # Теперь безопасно пишем текст
         status_bar.showMessage(
             "Горячие клавиши: [ЛКМ] - Ход | [F2] - Справка | [Esc] - Выход"
         )
-
-        self.adjustSize()  # Окно принимает минимально возможный размер под все виджеты
-        self.setFixedSize(self.size())  #  Жестко фиксируем этот размер
-        self._update_ui()
 
     def _on_cell_clicked(self, row: int, col: int):
         if self.game.make_move(row, col):
