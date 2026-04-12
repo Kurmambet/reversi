@@ -1,6 +1,13 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
+from PyQt6.QtGui import QCloseEvent, QFont, QKeyEvent
+from PyQt6.QtWidgets import (
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.core import BLACK, Game, count_pieces
 from src.ui_board import BoardWidget
@@ -66,3 +73,57 @@ class MainWindow(QMainWindow):
         self.game.reset()
         self.board_widget.update()
         self._update_ui()
+
+    # Обработка закрытия окна
+    def closeEvent(self, event: QCloseEvent):
+        """Вызывается при попытке закрыть окно (крестиком или программно)."""
+        # Создаем диалоговое окно с вопросом
+        reply = QMessageBox.question(
+            self,
+            "Подтверждение выхода",  # Заголовок
+            "Вы действительно хотите выйти из игры?\nТекущий прогресс будет потерян.",  # Текст
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,  # Кнопки
+            QMessageBox.StandardButton.No,  # Кнопка по умолчанию (чтобы случайно не нажать Enter)
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            event.accept()  # Разрешаем закрытие
+        else:
+            event.ignore()  # Отменяем закрытие, игра продолжается
+
+    # Обработка клавиатуры
+    def keyPressEvent(self, event: QKeyEvent):
+        """Вызывается при нажатии любой клавиши, пока окно активно."""
+
+        # Обработка клавиши Esc
+        if event.key() == Qt.Key.Key_Escape:
+            # вызываем встроенный метод .close() окна. Он автоматически вызовет
+            # closeEvent, где уже есть вопрос о выходе
+            self.close()
+
+        # Обработка клавиши F2
+        elif event.key() == Qt.Key.Key_F2:
+            self._show_help()
+
+        else:
+            # Если нажали другую клавишу, передаем событие дальше (стандартное поведение)
+            super().keyPressEvent(event)
+
+    def _show_help(self):
+        """окно с правилами."""
+        help_text = (
+            "ПРАВИЛА ИГРЫ 'РЕВЕРСИ'\n\n"
+            "Цель игры — чтобы ваших фишек на доске оказалось больше, чем фишек противника.\n\n"
+            "Как ходить:\n"
+            "Вы должны поставить свою фишку так, чтобы между ней и одной из "
+            "ваших старых фишек оказался непрерывный ряд фишек противника "
+            "(по вертикали, горизонтали или диагонали). "
+            "Все 'закрытые' фишки противника перевернутся и станут вашими.\n\n"
+            "Горячие клавиши:\n"
+            "• Левый клик — сделать ход\n"
+            "• F2 — показать эту справку\n"
+            "• Esc — выход из программы"
+        )
+
+        # окно с кнопкой "ОК"
+        QMessageBox.information(self, "Справка по игре", help_text)
