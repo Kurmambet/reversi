@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QStatusBar,
     QVBoxLayout,
     QWidget,
 )
@@ -19,24 +20,47 @@ class MainWindow(QMainWindow):
         self.game = Game()
         self.setWindowTitle("Реверси (Отелло)")
 
-        self.status_label = QLabel()  # Ходят белые/черные
+        menu_bar = self.menuBar()
+
+        # Меню "Игра"
+        game_menu = menu_bar.addMenu("Игра")  # type: ignore
+
+        # Действие "Новая игра" в меню
+        new_game_action = game_menu.addAction("Новая игра")
+        new_game_action.triggered.connect(self._new_game)
+        game_menu.addAction(new_game_action)
+
+        # Действие "Выход" в меню
+        exit_action = game_menu.addAction("Выход")
+        exit_action.triggered.connect(self.close)
+
+        # Меню "Справка"
+        help_menu = menu_bar.addMenu("Справка")
+
+        # Действие "Правила игры" в меню
+        rules_action = help_menu.addAction("Правила игры (F2)")
+        rules_action.triggered.connect(self._show_help)
+
+        # --- 2. ОСНОВНОЙ ИНТЕРФЕЙС ---
+        self.status_label = QLabel()
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
 
-        self.score_label = QLabel()  # счёт
+        self.score_label = QLabel()
         self.score_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.score_label.setFont(QFont("Arial", 12))
 
         self.board_widget = BoardWidget(self.game)
         self.board_widget.cell_clicked.connect(self._on_cell_clicked)
 
+        # Оставляем только кнопку "Новая игра" под доской
         btn_new = QPushButton("Новая игра")
         btn_new.setFont(QFont("Arial", 11))
         btn_new.clicked.connect(self._new_game)
 
-        layout = QVBoxLayout()  # вертикально
-        layout.setSpacing(8)  # 8px между виджетами
-        layout.setContentsMargins(12, 12, 12, 12)  # от краев окна
+        layout = QVBoxLayout()
+        layout.setSpacing(8)
+        layout.setContentsMargins(12, 12, 12, 12)
         layout.addWidget(self.status_label)
         layout.addWidget(self.score_label)
         layout.addWidget(self.board_widget)
@@ -45,7 +69,18 @@ class MainWindow(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
-        self.adjustSize()  # авторазмеры окна
+
+        # --- 3. ИСПРАВЛЯЕМ ОШИБКУ СО СТАТУС-БАРОМ ---
+        # Явно создаем объект статус-бара и устанавливаем его в окно
+        status_bar = QStatusBar()
+        self.setStatusBar(status_bar)
+        # Теперь безопасно пишем текст
+        status_bar.showMessage(
+            "Горячие клавиши: [ЛКМ] - Ход | [F2] - Справка | [Esc] - Выход"
+        )
+
+        self.adjustSize()  # Окно принимает минимально возможный размер под все виджеты
+        self.setFixedSize(self.size())  #  Жестко фиксируем этот размер
         self._update_ui()
 
     def _on_cell_clicked(self, row: int, col: int):
@@ -95,10 +130,8 @@ class MainWindow(QMainWindow):
     def keyPressEvent(self, event: QKeyEvent):
         """Вызывается при нажатии любой клавиши, пока окно активно."""
 
-        # Обработка клавиши Esc
         if event.key() == Qt.Key.Key_Escape:
-            # вызываем встроенный метод .close() окна. Он автоматически вызовет
-            # closeEvent, где уже есть вопрос о выходе
+            # встроенный метод .close() окна автоматически вызовет closeEvent
             self.close()
 
         # Обработка клавиши F2
@@ -120,9 +153,9 @@ class MainWindow(QMainWindow):
             "(по вертикали, горизонтали или диагонали). "
             "Все 'закрытые' фишки противника перевернутся и станут вашими.\n\n"
             "Горячие клавиши:\n"
-            "• Левый клик — сделать ход\n"
-            "• F2 — показать эту справку\n"
-            "• Esc — выход из программы"
+            "- Левый клик — сделать ход\n"
+            "- F2 — показать эту справку\n"
+            "- Esc — выход из программы"
         )
 
         # окно с кнопкой "ОК"
