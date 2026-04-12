@@ -22,6 +22,19 @@ DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 
 
 
 def initial_board() -> list[list[int]]:
+    """
+    [
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 2, 1, 0, 0, 0],
+    [0, 0, 0, 1, 2, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0]
+    ]
+    """
+
     board = [[EMPTY] * BOARD_SIZE for _ in range(BOARD_SIZE)]
     board[3][3] = WHITE  # d4
     board[3][4] = BLACK  # e4
@@ -38,42 +51,47 @@ def get_flips(board: list, row: int, col: int, player: int) -> list[tuple]:
     """Возвращает список фишек, которые перевернутся при ходе (row, col)."""
     if board[row][col] != EMPTY:
         return []
+
     opp = opponent(player)
-    result = []
+    result = []  # какие фишки надо перевернуть
+
     for dr, dc in DIRECTIONS:
-        line = []
-        r, c = row + dr, col + dc
-        while 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and board[r][c] == opp:
+        line = []  # в текущем направлении
+        r, c = row + dr, col + dc  # первый шаг в выбранном направлении
+        while (0 <= r < BOARD_SIZE) and (0 <= c < BOARD_SIZE) and (board[r][c] == opp):
             line.append((r, c))
             r += dr
             c += dc
         if (
             line
-            and 0 <= r < BOARD_SIZE
-            and 0 <= c < BOARD_SIZE
-            and board[r][c] == player
+            and (0 <= r < BOARD_SIZE)
+            and (0 <= c < BOARD_SIZE)
+            and (board[r][c] == player)  # на которой остановились - наша фишка
         ):
             result.extend(line)
-    return result
+    return result  # по 8 направлениям из текущего места
 
 
 def get_valid_moves(board: list, player: int) -> list[tuple]:
+    """список клеток (r, c), куда текущему игроку разрешено походить"""
     return [
         (r, c)
         for r in range(BOARD_SIZE)
         for c in range(BOARD_SIZE)
-        if get_flips(board, r, c, player)
+        if get_flips(board, r, c, player)  # [] = False, да да, в питоне так работает
     ]
 
 
 def apply_move(board: list, row: int, col: int, player: int) -> None:
-    flips = get_flips(board, row, col, player)
-    board[row][col] = player
+    flips = get_flips(board, row, col, player)  # какие фишки перевернутся
+    board[row][col] = player  # фишку игрока на указанную клетку
     for r, c in flips:
         board[r][c] = player
 
 
 def count_pieces(board: list) -> tuple[int, int]:
+    """текущий счет ч:б"""
+    # sum воспринимает True как 1
     black = sum(
         board[r][c] == BLACK for r in range(BOARD_SIZE) for c in range(BOARD_SIZE)
     )
@@ -86,6 +104,7 @@ def count_pieces(board: list) -> tuple[int, int]:
 # ─────────────────────────── СОСТОЯНИЕ ИГРЫ ───────────────────────────────────
 
 
+# State Machine
 class Game:
     def __init__(self):
         self.reset()
@@ -118,7 +137,7 @@ class Game:
             return
 
         self.game_over = True  # оба без ходов — конец
-        self.valid_moves = []
+        self.valid_moves = []  # чтобы с экрана пропали серые точки-подсказки
 
 
 # ─────────────────────────── ВИДЖЕТ ДОСКИ ─────────────────────────────────────
@@ -137,28 +156,33 @@ class BoardWidget(QWidget):
         self.setFixedSize(BOARD_SIZE * CELL_SIZE, BOARD_SIZE * CELL_SIZE)
 
     def paintEvent(self, _event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        """вызывается PyQt автоматически"""
+
+        painter = QPainter(self)  # привязка к виджету
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)  # вкл сглаживание
 
         board = self.game.board
-        valid = set(self.game.valid_moves)
+        valid = set(self.game.valid_moves)  #  чтобы было O(1) при (r, c) in valid
 
         for r in range(BOARD_SIZE):
             for c in range(BOARD_SIZE):
+                # координаты верхнего левого угла текущей клетки в пикселях
                 x, y = c * CELL_SIZE, r * CELL_SIZE
-                cx, cy = x + CELL_SIZE // 2, y + CELL_SIZE // 2
+                cx, cy = x + CELL_SIZE // 2, y + CELL_SIZE // 2  # центр клетки
                 m = 6  # отступ фишки от края клетки
 
                 # Клетка
                 painter.fillRect(x, y, CELL_SIZE, CELL_SIZE, self.BOARD_COLOR)
-                painter.setPen(QPen(self.GRID_COLOR, 1))
-                painter.drawRect(x, y, CELL_SIZE, CELL_SIZE)
+                painter.setPen(QPen(self.GRID_COLOR, 1))  # контуры, толщина 1px
+                # Отключаем заливку (NoBrush), иначе drawRect закрасил бы клетку цветом предыдущей нарисованной фишки.
+                painter.setBrush(Qt.BrushStyle.NoBrush)  # заливка внутри контуров
+                painter.drawRect(x, y, CELL_SIZE, CELL_SIZE)  # Рисует рамку клетки
 
                 piece = board[r][c]
 
                 if piece == BLACK:
-                    painter.setBrush(QBrush(QColor("#111111")))
-                    painter.setPen(QPen(QColor("#555555"), 1))
+                    painter.setBrush(QBrush(QColor("#111111")))  # Заливка
+                    painter.setPen(QPen(QColor("#555555"), 1))  # Контур
                     painter.drawEllipse(
                         x + m, y + m, CELL_SIZE - 2 * m, CELL_SIZE - 2 * m
                     )
@@ -176,11 +200,15 @@ class BoardWidget(QWidget):
                     painter.drawEllipse(cx - 8, cy - 8, 16, 16)
 
     def mousePressEvent(self, event):
+        """когда клик внутри границ BoardWidget"""
+
         if event.button() == Qt.MouseButton.LeftButton:
+            # Пиксели -> Индексы матрицы
             col = int(event.position().x()) // CELL_SIZE
             row = int(event.position().y()) // CELL_SIZE
+            # береженого бог бережет
             if 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE:
-                self.cell_clicked.emit(row, col)
+                self.cell_clicked.emit(row, col)  # этот сигнал поймает MainWindow
 
 
 # ─────────────────────────── ГЛАВНОЕ ОКНО ─────────────────────────────────────
@@ -192,11 +220,11 @@ class MainWindow(QMainWindow):
         self.game = Game()
         self.setWindowTitle("Реверси (Отелло)")
 
-        self.status_label = QLabel()
+        self.status_label = QLabel()  # Ходят белые/черные
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
 
-        self.score_label = QLabel()
+        self.score_label = QLabel()  # счёт
         self.score_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.score_label.setFont(QFont("Arial", 12))
 
@@ -207,9 +235,9 @@ class MainWindow(QMainWindow):
         btn_new.setFont(QFont("Arial", 11))
         btn_new.clicked.connect(self._new_game)
 
-        layout = QVBoxLayout()
-        layout.setSpacing(8)
-        layout.setContentsMargins(12, 12, 12, 12)
+        layout = QVBoxLayout()  # вертикально
+        layout.setSpacing(8)  # 8px между виджетами
+        layout.setContentsMargins(12, 12, 12, 12)  # от краев окна
         layout.addWidget(self.status_label)
         layout.addWidget(self.score_label)
         layout.addWidget(self.board_widget)
@@ -218,12 +246,12 @@ class MainWindow(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
-        self.adjustSize()
+        self.adjustSize()  # авторазмеры окна
         self._update_ui()
 
     def _on_cell_clicked(self, row: int, col: int):
         if self.game.make_move(row, col):
-            self.board_widget.update()
+            self.board_widget.update()  # дергает paintEvent в виджете доски
             self._update_ui()
 
     def _update_ui(self):
@@ -249,7 +277,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
+    app = QApplication(sys.argv)  # Управляет циклом событий, настройками ОС и стилями
     window = MainWindow()
     window.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec())  # запуск Event Loop
