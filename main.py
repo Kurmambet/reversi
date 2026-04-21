@@ -56,12 +56,14 @@ def create_splash_pixmap() -> QPixmap:
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    # Создаем и показываем заставку
+    app.setStyle("Fusion")
+
+    # заставка
     splash_pixmap = create_splash_pixmap()
     splash = QSplashScreen(splash_pixmap, Qt.WindowType.WindowStaysOnTopHint)
     splash.show()
 
-    # Имитируем долгую загрузку
+    # имитация долгую загрузку
     # app.processEvents() заставляет окно отрисоваться немедленно
     app.processEvents()
     time.sleep(2.5)  # Пауза 2.5 секунды

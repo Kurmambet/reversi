@@ -1,5 +1,13 @@
 from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtGui import QAction, QCloseEvent, QDesktopServices, QFont, QKeyEvent
+from PyQt6.QtGui import (
+    QAction,
+    QCloseEvent,
+    QColor,
+    QDesktopServices,
+    QFont,
+    QKeyEvent,
+    QPalette,
+)
 from PyQt6.QtWidgets import (
     QLabel,
     QMainWindow,
@@ -20,6 +28,7 @@ class MainWindow(QMainWindow):
 
         # Инициализация данных
         self.game = Game()
+        self.current_theme = "light"
 
         # Настройка главного окна
         self.setWindowTitle("Реверси (Отелло)")
@@ -32,6 +41,7 @@ class MainWindow(QMainWindow):
         # Окно принимает минимально возможный размер под все виджеты
         self.adjustSize()
         self.setFixedSize(self.size())  #  Жестко фиксируем этот размер
+        self._apply_theme()
         self._update_ui()
 
     def _setup_menu(self):
@@ -44,6 +54,12 @@ class MainWindow(QMainWindow):
         new_game_action = QAction("Новая игра", self)
         new_game_action.triggered.connect(self._new_game)
         game_menu.addAction(new_game_action)
+
+        theme_action = QAction("Переключить тему", self)
+        theme_action.triggered.connect(self._toggle_theme)
+        game_menu.addAction(theme_action)
+
+        game_menu.addSeparator()
 
         exit_action = QAction("Выход", self)
         exit_action.triggered.connect(self.close)
@@ -65,6 +81,55 @@ class MainWindow(QMainWindow):
             )
         )
         help_menu.addAction(github_action)
+
+    def _toggle_theme(self):
+        """Переключает темы"""
+        self.current_theme = "dark" if self.current_theme == "light" else "light"
+        self._apply_theme()
+
+    def _apply_theme(self):
+        """Применяет палитру"""
+        self.board_widget.set_theme(self.current_theme)
+
+        palette = QPalette()
+
+        if self.current_theme == "dark":
+            bg_color = QColor("#1e1e1e")
+            text_color = QColor("#ffffff")
+            btn_color = QColor("#292929")
+
+            palette.setColor(QPalette.ColorRole.Window, bg_color)
+            palette.setColor(QPalette.ColorRole.WindowText, text_color)
+            palette.setColor(QPalette.ColorRole.Base, bg_color)
+            palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#2d2d2d"))
+            palette.setColor(QPalette.ColorRole.ToolTipBase, text_color)
+            palette.setColor(QPalette.ColorRole.ToolTipText, text_color)
+            palette.setColor(QPalette.ColorRole.Text, text_color)
+            palette.setColor(QPalette.ColorRole.Button, btn_color)
+            palette.setColor(QPalette.ColorRole.ButtonText, text_color)
+            palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+            palette.setColor(QPalette.ColorRole.Highlight, QColor("#0078d7"))
+            palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.black)
+
+        else:
+            bg_color = QColor("#f0f0f0")
+            text_color = QColor("#000000")
+            btn_color = QColor("#cecece")
+
+            palette.setColor(QPalette.ColorRole.Window, bg_color)
+            palette.setColor(QPalette.ColorRole.WindowText, text_color)
+            palette.setColor(QPalette.ColorRole.Base, Qt.GlobalColor.white)
+            palette.setColor(QPalette.ColorRole.AlternateBase, bg_color)
+            palette.setColor(QPalette.ColorRole.ToolTipBase, Qt.GlobalColor.white)
+            palette.setColor(QPalette.ColorRole.ToolTipText, text_color)
+            palette.setColor(QPalette.ColorRole.Text, text_color)
+            palette.setColor(QPalette.ColorRole.Button, btn_color)
+            palette.setColor(QPalette.ColorRole.ButtonText, text_color)
+            palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+            palette.setColor(QPalette.ColorRole.Highlight, QColor("#0078d7"))
+            palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.white)
+
+        self.setPalette(palette)
 
     def _setup_ui(self):
         """Создает центральную часть окна (доска, текст, кнопки)."""
@@ -129,9 +194,8 @@ class MainWindow(QMainWindow):
         self.board_widget.update()
         self._update_ui()
 
-    # Обработка закрытия окна
     def closeEvent(self, event: QCloseEvent):
-        """Вызывается при попытке закрыть окно (крестиком или программно)."""
+        """Вызывается при попытке закрыть окно"""
         # Создаем диалоговое окно с вопросом
         reply = QMessageBox.question(
             self,
@@ -146,7 +210,6 @@ class MainWindow(QMainWindow):
         else:
             event.ignore()  # Отменяем закрытие, игра продолжается
 
-    # Обработка клавиатуры
     def keyPressEvent(self, event: QKeyEvent):
         """Вызывается при нажатии любой клавиши, пока окно активно."""
 
