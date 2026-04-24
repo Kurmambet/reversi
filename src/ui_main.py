@@ -13,12 +13,12 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QStatusBar,
     QVBoxLayout,
     QWidget,
 )
 
 from src.core import BLACK, Game, count_pieces
+from src.storage import load_game, save_game
 from src.ui_board import BoardWidget
 
 
@@ -36,7 +36,6 @@ class MainWindow(QMainWindow):
         # Сборка интерфейса по частям
         self._setup_menu()
         self._setup_ui()
-        self._setup_statusbar()
 
         # Окно принимает минимально возможный размер под все виджеты
         self.adjustSize()
@@ -54,6 +53,16 @@ class MainWindow(QMainWindow):
         new_game_action = QAction("Новая игра", self)
         new_game_action.triggered.connect(self._new_game)
         game_menu.addAction(new_game_action)
+
+        save_action = QAction("Сохранить партию", self)
+        save_action.triggered.connect(self._save_game)
+        game_menu.addAction(save_action)
+
+        load_action = QAction("Загрузить партию", self)
+        load_action.triggered.connect(self._load_game)
+        game_menu.addAction(load_action)
+
+        game_menu.addSeparator()
 
         theme_action = QAction("Переключить тему", self)
         theme_action.triggered.connect(self._toggle_theme)
@@ -160,14 +169,6 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
-    def _setup_statusbar(self):
-        """Настраивает строку состояния внизу окна."""
-        status_bar = QStatusBar()
-        self.setStatusBar(status_bar)
-        status_bar.showMessage(
-            "Горячие клавиши: [ЛКМ] - Ход | [F2] - Справка | [Esc] - Выход"
-        )
-
     def _on_cell_clicked(self, row: int, col: int):
         if self.game.make_move(row, col):
             self.board_widget.update()  # дергает paintEvent в виджете доски
@@ -243,3 +244,17 @@ class MainWindow(QMainWindow):
 
         # окно с кнопкой "ОК"
         QMessageBox.information(self, "Справка по игре", help_text)
+
+    def _save_game(self):
+        """Сохраняет текущее состояние игры."""
+        save_game(self.game)
+        QMessageBox.information(self, "Сохранение", "Партия сохранена!")
+
+    def _load_game(self):
+        """Загружает сохранённое состояние игры."""
+        if load_game(self.game):
+            self.board_widget.update()  # Перерисовываем доску
+            self._update_ui()  # Обновляем лейблы (счёт, чей ход)
+            QMessageBox.information(self, "Загрузка", "Партия загружена!")
+        else:
+            QMessageBox.warning(self, "Загрузка", "Файл сохранения не найден.")

@@ -12,3 +12,4 @@ build
 notes.*
 project_structure.md
 tree.py
+*.json
