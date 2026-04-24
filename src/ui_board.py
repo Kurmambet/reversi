@@ -24,8 +24,14 @@ class BoardWidget(QWidget):
     def __init__(self, game: Game):
         super().__init__()
         self.game = game
+        self.current_player = BLACK
         self.setFixedSize(BOARD_SIZE * CELL_SIZE, BOARD_SIZE * CELL_SIZE)
         self.theme_name = "light"  # по умолчанию
+
+    def set_turn(self, player: int):
+        """Сообщает виджету чей сейчас ход для подсказок и рамки."""
+        self.current_player = player
+        self.update()
 
     def set_theme(self, theme_name: str):
         """Меняет тему виджета и запрашивает перерисовку"""
@@ -42,7 +48,7 @@ class BoardWidget(QWidget):
         board = self.game.board
         valid = set(self.game.valid_moves)  # чтобы было O(1) при (r, c) in valid
 
-        # Получаем текущие цвета доски
+        # текущие цвета доски
         colors = THEMES[self.theme_name]
 
         for r in range(BOARD_SIZE):
@@ -50,16 +56,15 @@ class BoardWidget(QWidget):
                 # координаты верхнего левого угла текущей клетки в пикселях
                 x, y = c * CELL_SIZE, r * CELL_SIZE
                 cx, cy = x + CELL_SIZE // 2, y + CELL_SIZE // 2  # центр клетки
-                m = 6  # отступ фишки от края клетки
+                m = 6
 
-                # Рисуем клетку с цветами из словаря
                 painter.fillRect(x, y, CELL_SIZE, CELL_SIZE, colors["board"])
                 painter.setPen(QPen(colors["grid"], 1))  # контуры, толщина 1px
                 # нет заливке!, иначе drawRect закрасил бы клетку цветом предыдущей нарисованной фишки.
                 painter.setBrush(Qt.BrushStyle.NoBrush)
                 painter.drawRect(x, y, CELL_SIZE, CELL_SIZE)
 
-                # Рисуем фишки (оставляем черно/белыми, это классика)
+                # отрисовка фишек
                 piece = board[r][c]
                 if piece == BLACK:
                     painter.setBrush(QBrush(QColor("#111111")))
@@ -74,10 +79,23 @@ class BoardWidget(QWidget):
                     painter.drawEllipse(
                         x + m, y + m, CELL_SIZE - 2 * m, CELL_SIZE - 2 * m
                     )
-                elif (r, c) in valid:  # подсказка доступного хода
-                    painter.setBrush(QBrush(colors["hint"]))
+                elif (r, c) in valid:
+                    # Цвет подсказки зависит от того, кто ходит
+                    if self.current_player == BLACK:
+                        hint_color = QColor(30, 30, 30, 90)  # тёмно-серый
+                    else:
+                        hint_color = QColor(240, 240, 240, 110)  # почти белый
+                    painter.setBrush(QBrush(hint_color))
                     painter.setPen(Qt.PenStyle.NoPen)
                     painter.drawEllipse(cx - 8, cy - 8, 16, 16)
+
+        # Цветная рамка поверх всего
+        border_color = (
+            QColor("#2B2B2B") if self.current_player == BLACK else QColor("#999999")
+        )
+        painter.setPen(QPen(border_color, 4))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRect(2, 2, self.width() - 4, self.height() - 4)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:

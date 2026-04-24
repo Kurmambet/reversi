@@ -175,20 +175,28 @@ class MainWindow(QMainWindow):
             self._update_ui()
 
     def _update_ui(self):
-        black, white = count_pieces(self.game.board)
-        self.score_label.setText(f"⚫ Чёрные: {black}   ⚪ Белые: {white}")
-
         if self.game.game_over:
+            black, white = count_pieces(self.game.board)
             if black > white:
-                text = "Игра окончена! Победили чёрные"
+                self.status_label.setText("Победили Чёрные!")
             elif white > black:
-                text = "Игра окончена! Победили белые"
+                self.status_label.setText("Победили Белые!")
             else:
-                text = "Игра окончена! Ничья"
+                self.status_label.setText("Ничья!")
         else:
-            name = "Чёрные" if self.game.current_player == BLACK else "Белые"
-            text = f"Ходят: {name}"
-        self.status_label.setText(text)
+            turn = "⚫ Чёрные" if self.game.current_player == BLACK else "⚪ Белые"
+            self.status_label.setText(f"Ходят: {turn}")
+
+        # Сообщаем виджету доски чей ход (для рамки и подсказок)
+        self.board_widget.set_turn(self.game.current_player)
+
+        black, white = count_pieces(self.game.board)
+
+        # Активный игрок — жирный, неактивный — обычный
+        if self.game.current_player == BLACK:
+            self.score_label.setText(f"<b>⚫ Чёрные: {black}</b>   ⚪ Белые: {white}")
+        else:
+            self.score_label.setText(f"⚫ Чёрные: {black}   <b>⚪ Белые: {white}</b>")
 
     def _new_game(self):
         self.game.reset()
