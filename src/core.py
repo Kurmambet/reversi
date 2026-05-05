@@ -93,10 +93,10 @@ def count_pieces(board: list) -> tuple[int, int]:
 
 # State Machine
 class Game:
-    def __init__(self):
+    def __init__(self) -> None:
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
         self.board = initial_board()
         self.current_player = BLACK
         self.valid_moves = get_valid_moves(self.board, BLACK)
@@ -109,7 +109,7 @@ class Game:
         self._advance_turn()
         return True
 
-    def _advance_turn(self):
+    def _advance_turn(self) -> None:
         next_p = opponent(self.current_player)
         moves = get_valid_moves(self.board, next_p)
 
