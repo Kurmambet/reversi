@@ -1,13 +1,10 @@
-# ─────────────────────────── КОНСТАНТЫ ────────────────────────────────────────
-
 BOARD_SIZE = 8
 CELL_SIZE = 70
 EMPTY, BLACK, WHITE = 0, 1, 2
 DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
-# ─────────────────────────── ЧИСТАЯ ЛОГИКА ────────────────────────────────────
 
-
+# чистая логика
 def initial_board() -> list[list[int]]:
     """
     [
@@ -65,7 +62,7 @@ def get_valid_moves(board: list, player: int) -> list[tuple]:
         (r, c)
         for r in range(BOARD_SIZE)
         for c in range(BOARD_SIZE)
-        if get_flips(board, r, c, player)  # [] = False, да да, в питоне так работает
+        if get_flips(board, r, c, player)
     ]
 
 
@@ -78,7 +75,6 @@ def apply_move(board: list, row: int, col: int, player: int) -> None:
 
 def count_pieces(board: list) -> tuple[int, int]:
     """текущий счет ч:б"""
-    # sum воспринимает True как 1
     black = sum(
         board[r][c] == BLACK for r in range(BOARD_SIZE) for c in range(BOARD_SIZE)
     )
@@ -88,15 +84,12 @@ def count_pieces(board: list) -> tuple[int, int]:
     return black, white
 
 
-# ─────────────────────────── СОСТОЯНИЕ ИГРЫ ───────────────────────────────────
-
-
-# State Machine
+# State Machine / состояние игры
 class Game:
-    def __init__(self):
+    def __init__(self) -> None:
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
         self.board = initial_board()
         self.current_player = BLACK
         self.valid_moves = get_valid_moves(self.board, BLACK)
@@ -109,7 +102,7 @@ class Game:
         self._advance_turn()
         return True
 
-    def _advance_turn(self):
+    def _advance_turn(self) -> None:
         next_p = opponent(self.current_player)
         moves = get_valid_moves(self.board, next_p)
 
