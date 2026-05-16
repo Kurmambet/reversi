@@ -46,7 +46,7 @@ def create_splash_pixmap() -> QPixmap:
     painter.drawText(
         pixmap.rect(),
         Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight,
-        "Курсовая работа.  \n2026 г.   \n",
+        "Курсовая работа.  \n2026 г.   \nАвтор: Вишняков Петр",
     )
 
     painter.end()
